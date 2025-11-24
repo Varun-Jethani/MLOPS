@@ -44,6 +44,13 @@ pipeline {
         }
       }
       steps {
+        withCredentials([
+          sshUserPrivateKey(credentialsId: 'ssh-deploy-cred', keyFileVariable: 'SSH_KEY'),
+          string(credentialsId: 'ec2-host', variable: 'EC2_SSH'),
+          string(credentialsId: 'ecr-registry', variable: 'ECR_REGISTRY'),
+          string(credentialsId: 'ecr-repo', variable: 'ECR_REPO'),
+          string(credentialsId: 'aws-region', variable: 'AWS_REGION')
+        ]) {
         sh '''
           set -e
 
@@ -68,6 +75,7 @@ pipeline {
 
           docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}
         '''
+      }
       }
     }
 
