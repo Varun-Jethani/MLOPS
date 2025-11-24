@@ -63,6 +63,7 @@ pipeline {
             # ensure aws cli is available; install via pip if missing
             if ! command -v aws >/dev/null 2>&1; then
               echo "aws not found, installing awscli via pip"
+              apt-get update && apt-get install -y python3-pip || true
               python3 -m pip install --upgrade pip || true
               pip3 install awscli --upgrade || true
             fi
