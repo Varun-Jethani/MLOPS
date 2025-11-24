@@ -51,9 +51,12 @@ pipeline {
           docker --version
           python3 --version
           pip3 --version
-          apt-get update && apt-get install awscli -y
-
-          pip3 install --upgrade awscli
+          apt-get update -y 
+          apt-get install -y curl unzip ca-certificates
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+          unzip -o /tmp/awscliv2.zip -d /tmp
+          /tmp/aws/install -i /usr/local/aws-cli -b /usr/local/bin
+          rm -rf /tmp/aws /tmp/awscliv2.zip
           aws --version
 
           # ---- Your build steps work now ----
