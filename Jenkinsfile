@@ -91,7 +91,9 @@ pipeline {
           string(credentialsId: 'ec2-host', variable: 'EC2_SSH'),
           string(credentialsId: 'ecr-registry', variable: 'ECR_REGISTRY'),
           string(credentialsId: 'ecr-repo', variable: 'ECR_REPO'),
-          string(credentialsId: 'aws-region', variable: 'AWS_REGION')
+          string(credentialsId: 'aws-region', variable: 'AWS_REGION'),
+          string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+          string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
         ]) {
           sh '''
             set -e
