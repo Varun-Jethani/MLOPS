@@ -38,10 +38,7 @@ pipeline {
 
     stage('build-and-push-ecr-image') {
       // this stage should run on a node that can run Docker builds (controller with docker socket or a docker-enabled agent)
-      agent { docker {
-        image 'python:3.10-slim'
-        args '-u 0:0'   // run container as root
-      } }
+      agent any
       steps {
         checkout scm
 
