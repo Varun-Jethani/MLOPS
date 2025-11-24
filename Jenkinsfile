@@ -20,7 +20,10 @@ pipeline {
 
   stages {
     stage('integration') {
-      agent { docker { image 'python:3.10-slim' } }
+      agent { docker {
+        image 'python:3.10-slim'
+        args '-u 0:0'   // run container as root
+      } }
       steps {
         checkout scm
         sh '''
