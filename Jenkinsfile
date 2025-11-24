@@ -51,8 +51,8 @@ pipeline {
           docker --version
           python3 --version
           pip3 --version
-          aws --version
           pip install --upgrade awscli
+          aws --version
 
           # ---- Your build steps work now ----
           docker build -t ${ECR_REPO}:${IMAGE_TAG} .
