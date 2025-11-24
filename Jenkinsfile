@@ -38,7 +38,7 @@ pipeline {
 
     stage('build-and-push-ecr-image') {
       // this stage should run on a node that can run Docker builds (controller with docker socket or a docker-enabled agent)
-      agent any
+      agent { label 'docker' }
       steps {
         checkout scm
 
@@ -82,7 +82,7 @@ pipeline {
     }
 
     stage('continuous-deployment') {
-      agent any
+      agent { label 'docker' }
       steps {
         // use ssh key and ec2 host stored as credentials
         withCredentials([
