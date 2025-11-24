@@ -38,10 +38,10 @@ pipeline {
 
     stage('build-and-push-ecr-image') {
       // this stage should run on a node that can run Docker builds (controller with docker socket or a docker-enabled agent)
-      agent docker {
+      agent { docker {
         image 'docker:24.0.5-cli'
         args '-v /var/run/docker.sock:/var/run/docker.sock -u 0:0' // mount docker socket and run as root
-      }
+      } }
       steps {
         checkout scm
 
