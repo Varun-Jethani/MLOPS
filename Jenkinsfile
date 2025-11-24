@@ -38,10 +38,7 @@ pipeline {
 
     stage('build-and-push-ecr-image') {
       // this stage should run on a node that can run Docker builds (controller with docker socket or a docker-enabled agent)
-      agent { docker {
-        image 'python:3.10-slim'
-        args '-u 0:0'   // run container as root
-      } }
+      agent { label 'docker' }
       steps {
         checkout scm
 
@@ -66,7 +63,6 @@ pipeline {
             # ensure aws cli is available; install via pip if missing
             if ! command -v aws >/dev/null 2>&1; then
               echo "aws not found, installing awscli via pip"
-              apt-get update && apt-get install -y python3-pip || true
               python -m pip install --upgrade pip || true
               pip install awscli --upgrade || true
             fi
