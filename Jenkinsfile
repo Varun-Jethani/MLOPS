@@ -101,6 +101,9 @@ pipeline {
             REGISTRY="${ECR_REGISTRY}"
             REPO="${ECR_REPO}"
             IMAGE_FULL=${REGISTRY}/${REPO}:${IMAGE_TAG}
+            AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+            AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+            AWS_REGION="${AWS_REGION}"
 
             echo "Deploying image: ${IMAGE_FULL} to ${EC2_SSH}"
 
