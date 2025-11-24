@@ -37,49 +37,34 @@ pipeline {
     }
 
     stage('build-and-push-ecr-image') {
-      // this stage should run on a node that can run Docker builds (controller with docker socket or a docker-enabled agent)
-      agent { label 'docker' }
-      steps {
-        checkout scm
-
-        // gather all secrets as strings
-        withCredentials([
-          string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-          string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
-          string(credentialsId: 'aws-region', variable: 'AWS_REGION'),
-          string(credentialsId: 'ecr-registry', variable: 'ECR_REGISTRY'),
-          string(credentialsId: 'ecr-repo', variable: 'ECR_REPO')
-        ]) {
-          sh '''
-            set -e
-            IMAGE_TAG="${IMAGE_TAG}"
-            REPO="${ECR_REPO}"
-            REGISTRY="${ECR_REGISTRY}"
-
-            echo "Building Docker image ${REPO}:${IMAGE_TAG}"
-            docker build -t ${REPO}:${IMAGE_TAG} .
-            docker tag ${REPO}:${IMAGE_TAG} ${REGISTRY}/${REPO}:${IMAGE_TAG}
-
-            # ensure aws cli is available; install via pip if missing
-            if ! command -v aws >/dev/null 2>&1; then
-              echo "aws not found, installing awscli via pip"
-              python -m pip install --upgrade pip || true
-              pip install awscli --upgrade || true
-            fi
-
-            echo "Configuring AWS CLI and logging into ECR"
-            aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-            aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
-            aws configure set region ${AWS_REGION}
-
-            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY}
-
-            echo "Pushing ${REGISTRY}/${REPO}:${IMAGE_TAG} to ECR"
-            docker push ${REGISTRY}/${REPO}:${IMAGE_TAG}
-          '''
+      agent {
+        docker {
+          image 'ghcr.io/catthehacker/ubuntu:act-latest'
+          args '-u root:root -v /var/run/docker.sock:/var/run/docker.sock'
         }
       }
+      steps {
+        sh '''
+          set -e
+
+          echo "Checking tools..."
+          docker --version
+          python3 --version
+          pip3 --version
+          aws --version
+
+          # ---- Your build steps work now ----
+          docker build -t ${ECR_REPO}:${IMAGE_TAG} .
+          docker tag ${ECR_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}
+
+          aws ecr get-login-password --region ${AWS_REGION} \
+            | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+          docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}
+        '''
+      }
     }
+
 
     stage('continuous-deployment') {
       agent { label 'docker' }
