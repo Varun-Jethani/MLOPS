@@ -36,53 +36,48 @@ pipeline {
       }
     }
 
-    stage('build-and-push-ecr-image') {
-      // this stage should run on a node that can run Docker builds (controller with docker socket or a docker-enabled agent)
-      agent { docker {
-        image 'docker:24.0.5-cli'
-        args '-v /var/run/docker.sock:/var/run/docker.sock -u 0:0' // mount docker socket and run as root
-      } }
-      steps {
-        checkout scm
+   stage('build-and-push-ecr-image') {
+  agent { docker {
+    image 'amazon/aws-cli:2.15.0'    // contains python, pip, aws, everything
+    args '-v /var/run/docker.sock:/var/run/docker.sock -u 0:0'
+  } }
+  steps {
+    checkout scm
 
-        // gather all secrets as strings
-        withCredentials([
-          string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-          string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
-          string(credentialsId: 'aws-region', variable: 'AWS_REGION'),
-          string(credentialsId: 'ecr-registry', variable: 'ECR_REGISTRY'),
-          string(credentialsId: 'ecr-repo', variable: 'ECR_REPO')
-        ]) {
-          sh '''
-            set -e
-            IMAGE_TAG="${IMAGE_TAG}"
-            REPO="${ECR_REPO}"
-            REGISTRY="${ECR_REGISTRY}"
+    withCredentials([
+      string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+      string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+      string(credentialsId: 'aws-region', variable: 'AWS_REGION'),
+      string(credentialsId: 'ecr-registry', variable: 'ECR_REGISTRY'),
+      string(credentialsId: 'ecr-repo', variable: 'ECR_REPO')
+    ]) {
+      sh '''
+        set -e
+        IMAGE_TAG="${IMAGE_TAG}"
+        REPO="${ECR_REPO}"
+        REGISTRY="${ECR_REGISTRY}"
 
-            echo "Building Docker image ${REPO}:${IMAGE_TAG}"
-            docker build -t ${REPO}:${IMAGE_TAG} .
-            docker tag ${REPO}:${IMAGE_TAG} ${REGISTRY}/${REPO}:${IMAGE_TAG}
+        echo "Building Docker image ${REPO}:${IMAGE_TAG}"
+        docker build -t ${REPO}:${IMAGE_TAG} .
 
-            # ensure aws cli is available; install via pip if missing
-            if ! command -v aws >/dev/null 2>&1; then
-              echo "aws not found, installing awscli via pip"
-              python3 -m pip install --upgrade pip || true
-              pip3 install awscli --upgrade || true
-            fi
+        echo "Tagging image"
+        docker tag ${REPO}:${IMAGE_TAG} ${REGISTRY}/${REPO}:${IMAGE_TAG}
 
-            echo "Configuring AWS CLI and logging into ECR"
-            aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-            aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
-            aws configure set region ${AWS_REGION}
+        echo "Logging into ECR"
+        aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+        aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+        aws configure set region ${AWS_REGION}
 
-            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${REGISTRY}
+        aws ecr get-login-password --region ${AWS_REGION} \
+            | docker login --username AWS --password-stdin ${REGISTRY}
 
-            echo "Pushing ${REGISTRY}/${REPO}:${IMAGE_TAG} to ECR"
-            docker push ${REGISTRY}/${REPO}:${IMAGE_TAG}
-          '''
-        }
-      }
+        echo "Pushing image to ECR"
+        docker push ${REGISTRY}/${REPO}:${IMAGE_TAG}
+      '''
     }
+  }
+}
+
 
     stage('continuous-deployment') {
       agent any
