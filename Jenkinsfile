@@ -51,7 +51,8 @@ pipeline {
           docker --version
           python3 --version
           pip3 --version
-          pip install --upgrade awscli
+          
+          pip3 install --upgrade awscli
           aws --version
 
           # ---- Your build steps work now ----
